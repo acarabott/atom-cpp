@@ -1,14 +1,5 @@
 #include <iostream>
 
-struct State {
-    int count = 0;
-};
-
-void printState(const State &state) {
-    std::cout << "State:" << std::endl;
-    std::cout << "count: " << state.count << std::endl;
-}
-
 template<class T>
 class Atom {
 public:
@@ -19,6 +10,15 @@ public:
 private:
     T value;
 };
+
+struct State {
+    int count = 0;
+};
+
+void printState(const State &state) {
+    std::cout << "State:" << std::endl;
+    std::cout << "count: " << state.count << std::endl;
+}
 
 Atom<State> db;
 
