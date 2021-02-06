@@ -10,9 +10,28 @@ void printState(const State& state)
     std::cout << "count: " << state.count <<  std::endl;
 }
 
+class Atom
+{
+public:
+    const State get() { return state; }
+    void set(const State& state_) { state = state_; }
+private:
+    State state;
+};
+
+Atom db;
 int main(int argc, char *argv[]) {
 
-    State state;
+    auto state = db.get();
 
+    state.count++;
+
+    std::cout << "Old: " << std::endl;
+    printState(db.get());
+    std::cout << std::endl;
+
+    std::cout << "New: " << std::endl;
     printState(state);
+    std::cout << std::endl;
+
 }
