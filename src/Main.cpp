@@ -4,22 +4,24 @@ struct State {
     int count = 0;
 };
 
-void printState(const State& state)
-{
+void printState(const State &state) {
     std::cout << "State:" << std::endl;
-    std::cout << "count: " << state.count <<  std::endl;
+    std::cout << "count: " << state.count << std::endl;
 }
 
-class Atom
-{
+template<class T>
+class Atom {
 public:
-    const State get() { return state; }
-    void set(const State& state_) { state = state_; }
+    const T get() { return value; }
+
+    void set(const T &value_) { value = value_; }
+
 private:
-    State state;
+    T value;
 };
 
-Atom db;
+Atom<State> db;
+
 int main(int argc, char *argv[]) {
 
     auto state = db.get();
