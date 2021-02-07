@@ -39,9 +39,6 @@ void printState(const State &state) {
 }
 
 int main(int argc, char *argv[]) {
-    (void) argc;
-    (void) argv;
-
     // create atom
     Atom<State> db;
     History history(db);
@@ -85,8 +82,6 @@ int main(int argc, char *argv[]) {
     // create name cursor with macro
     auto nameCursor = DEF_CURSOR(db, name);
     nameCursor.subscribe([](const std::string &previous, const std::string &name) {
-        (void) previous;
-
         std::cout << "new name: " << name << std::endl;
     });
     nameCursor.set("jim");
@@ -106,7 +101,6 @@ int main(int argc, char *argv[]) {
 
     // subscribe to sub cursor
     valueCursor.subscribe([](auto &previous, auto &value) {
-        (void) previous;
         std::cout << "sub value changed: " << value << std::endl;
     });
 

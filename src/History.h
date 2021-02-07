@@ -11,9 +11,6 @@ public:
         store();
 
         mAtom.subscribe([this](auto &previous, auto &value) {
-            (void)previous;
-            (void)value;
-
             store();
         });
     }
