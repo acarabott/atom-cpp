@@ -1,14 +1,19 @@
 #include <iostream>
 #include <vector>
 
-template <typename T>
+template<typename T>
 using Subscription = std::function<void(const T &value, const T &previousValue)>;
 
+template<typename T>
+class Subscribable {
+    virtual const T &get() const = 0;
+};
+
 template<class T>
-class Atom {
+class Atom : public Subscribable<T> {
 public:
 
-    const T& get() const { return value; }
+    const T &get() const override { return value; }
 
     void set(const T value_) {
         previousValue = value;
@@ -19,7 +24,7 @@ public:
         }
     }
 
-    void update(std::function<T(const T& value)> update) {
+    void update(std::function<T(const T &value)> update) {
         if (update != nullptr) {
             set(update(get()));
         }
@@ -138,7 +143,7 @@ int main(int argc, char *argv[]) {
 
     auto first = db.get();
 
-    db.subscribe([](const State& newState, const State& previousState) {
+    db.subscribe([](const State &newState, const State &previousState) {
         std::cout << "Subscription!" << std::endl;
         std::cout << "previous: " << std::endl;
         printState(previousState);
