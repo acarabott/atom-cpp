@@ -15,7 +15,7 @@ public:
 
     const T &get() const override { return value; }
 
-    void set(const T value_) {
+    void set(const T& value_) {
         previousValue = value;
         value = value_;
 
