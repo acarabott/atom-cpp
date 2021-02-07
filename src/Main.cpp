@@ -109,6 +109,12 @@ struct get_template_type<C<T>> {
         [](const auto state) { return state.PROP; }, \
         [](const auto& value, auto &state) { state.PROP = value; })
 
+template<typename T_State, typename T_Value>
+Cursor<T_State, T_Value> defCursor(Atom<T_State> db, std::function<T_Value *(const T_State &)> accessor) {
+    return Cursor<T_State, T_Value>(db,
+                                    [accessor](const auto state) { return *accessor(state); },
+                                    [accessor](const T_Value &value, T_State &state) { *accessor(state) = value; });
+}
 
 int main(int argc, char *argv[]) {
 
@@ -145,4 +151,13 @@ int main(int argc, char *argv[]) {
         std::cout << "new name: " << name << std::endl;
     });
     nameCursor.set("jim");
+
+    auto thing = defCursor<State, int>(db, [](auto state) { return &(state.count); });
+
+    thing.subscribe([](auto count) {
+        std::cout << "super new count: " << count << std::endl;
+    });
+
+    thing.set(666);
+
 }
