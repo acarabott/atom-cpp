@@ -5,6 +5,9 @@ template<typename T>
 using Subscription = std::function<void(const T &value, const T &previousValue)>;
 
 template<typename T>
+using Update = std::function<const T&(const T &value)>;
+
+template<typename T>
 class Subscribable {
 public:
 
@@ -12,7 +15,7 @@ public:
 
     virtual void set(const T &value_) = 0;
 
-    virtual void update(std::function<T(const T &value)> update) = 0;
+    virtual void update(Update<T> update) = 0;
 
 };
 
@@ -31,7 +34,7 @@ public:
         }
     }
 
-    void update(std::function<T(const T &value)> update) override {
+    void update(Update<T> update) override {
         if (update != nullptr) {
             set(update(get()));
         }
