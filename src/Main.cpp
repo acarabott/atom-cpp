@@ -4,15 +4,16 @@
 template<class T>
 class Atom {
 public:
-    using Subscription = std::function<void(T &value)>;
+    using Subscription = std::function<void(const T &value, const T &oldValue)>;
 
     const T get() const { return value; }
 
     void set(const T value_) {
+        oldValue = value;
         value = value_;
 
         for (const auto &sub : subs) {
-            sub(value);
+            sub(value, oldValue);
         }
     }
 
@@ -28,6 +29,7 @@ public:
 
 private:
     T value;
+    T oldValue;
 
     std::vector<const Subscription> subs;
 };
@@ -134,9 +136,13 @@ int main(int argc, char *argv[]) {
 
     auto first = db.get();
 
-    db.subscribe([](State newState) {
+    db.subscribe([](const State& newState, const State& oldState) {
         std::cout << "Subscription!" << std::endl;
+        std::cout << "old: " << std::endl;
+        printState(oldState);
+        std::cout << std::endl;
 
+        std::cout << "new: " << std::endl;
         printState(newState);
         std::cout << std::endl;
     });
@@ -195,7 +201,7 @@ int main(int argc, char *argv[]) {
     Cursor<State, float> valueCursor(db, [](State &state) -> auto & { return state.sub.value; });
 
     std::cout << "sub value: " << valueCursor.get() << std::endl;
-    valueCursor.subscribe([](auto value){
+    valueCursor.subscribe([](auto value) {
         std::cout << "sub value changed: " << value << std::endl;
     });
 
