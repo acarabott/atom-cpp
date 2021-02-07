@@ -18,7 +18,10 @@ public:
 
     virtual void set(const T &value_) = 0;
 
-    virtual void update(Update<T> update) = 0;
+    void update(const Update<T> &update) {
+        assert(update != nullptr);
+        set(update(get()));
+    }
 
     void subscribe(const Subscription<T> &update) {
         subscriptions.push_back(update);
@@ -47,19 +50,13 @@ public:
         Subscribable<T>::notifySubscriptions(previousValue, value);
     }
 
-    void update(Update<T> update) override {
-        if (update != nullptr) {
-            set(update(get()));
-        }
-    }
-
 private:
     T value;
     T previousValue;
 };
 
 template<class T_State, class T_Value>
-class Cursor {
+class Cursor : public Subscribable<T_Value> {
 public:
     using Access = std::function<T_Value &(T_State &)>;
 
@@ -69,24 +66,18 @@ public:
         assert(mAccess != nullptr);
     }
 
-    T_Value get() {
+    const T_Value &get() const override {
         auto state = mAtom.get();
         return mAccess(state);
     }
 
-    void set(T_Value value) {
+    void set(const T_Value &value) override {
         auto state = mAtom.get();
         auto previous = mAccess(state);
         mAccess(state) = value;
         mAtom.set(state);
 
-        for (const auto &sub : subscriptions) {
-            sub(value, previous);
-        }
-    }
-
-    void subscribe(const Subscription<T_Value> &subscriber) {
-        subscriptions.push_back(subscriber);
+        Subscribable<T_Value>::notifySubscriptions(previous, value);
     }
 
     ~Cursor() {};
@@ -94,7 +85,6 @@ public:
 private:
     Atom<T_State> &mAtom;
     Access mAccess = nullptr;
-    std::vector<const Subscription<T_Value>> subscriptions;
 };
 
 struct SubState {
