@@ -8,11 +8,11 @@ template<typename T>
 using Update = std::function<const T &(const T &value)>;
 
 template<typename T>
-class Subscribable {
+class Atomic {
 public:
-    Subscribable() {};
+    Atomic() {};
 
-    ~Subscribable() {};
+    ~Atomic() {};
 
     virtual const T &get() const = 0;
 
@@ -38,7 +38,7 @@ protected:
 };
 
 template<class T>
-class Atom : public Subscribable<T> {
+class Atom : public Atomic<T> {
 public:
 
     const T &get() const override { return value; }
@@ -47,7 +47,7 @@ public:
         previousValue = value;
         value = value_;
 
-        Subscribable<T>::notifySubscriptions(previousValue, value);
+        Atomic<T>::notifySubscriptions(previousValue, value);
     }
 
 private:
@@ -56,7 +56,7 @@ private:
 };
 
 template<class T_State, class T_Value>
-class Cursor : public Subscribable<T_Value> {
+class Cursor : public Atomic<T_Value> {
 public:
     using Access = std::function<T_Value &(T_State &)>;
 
@@ -77,7 +77,7 @@ public:
         mAccess(state) = value;
         mAtom.set(state);
 
-        Subscribable<T_Value>::notifySubscriptions(previous, value);
+        Atomic<T_Value>::notifySubscriptions(previous, value);
     }
 
     ~Cursor() {};
