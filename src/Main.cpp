@@ -6,7 +6,11 @@ using Subscription = std::function<void(const T &value, const T &previousValue)>
 
 template<typename T>
 class Subscribable {
+public:
+
     virtual const T &get() const = 0;
+
+    virtual void set(const T &value_) = 0;
 };
 
 template<class T>
@@ -15,7 +19,7 @@ public:
 
     const T &get() const override { return value; }
 
-    void set(const T& value_) {
+    void set(const T &value_) override {
         previousValue = value;
         value = value_;
 
