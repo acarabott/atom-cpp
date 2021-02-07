@@ -32,14 +32,6 @@ private:
     std::vector<const Subscription> subs;
 };
 
-template<typename C>
-struct get_template_type;
-
-template<template<typename> class C, typename T>
-struct get_template_type<C<T>> {
-    using type = T;
-};
-
 template<class T_State, class T_Value>
 class Cursor {
     using Get = std::function<T_Value(const T_State &)>;
@@ -103,11 +95,20 @@ void printState(const State &state) {
     std::cout << "State: { count: " << state.count << " }" << std::endl;
 }
 
+template<typename C>
+struct get_template_type;
 
-#define defCursor(ATOM, PROP) \
-    Cursor<get_template_type<typeof ATOM>::type, decltype(std::declval<get_template_type<typeof ATOM>::type>().PROP)>(ATOM, \
+template<template<typename> class C, typename T>
+struct get_template_type<C<T>> {
+    using type = T;
+};
+
+#define STATE_TYPE(ATOM) get_template_type<typeof ATOM>::type
+#define DEF_CURSOR(ATOM, PROP) \
+    Cursor<STATE_TYPE(ATOM), decltype(std::declval<STATE_TYPE(ATOM)>().PROP)>(ATOM, \
         [](const auto state) { return state.PROP; }, \
         [](const auto& value, auto &state) { state.PROP = value; })
+
 
 int main(int argc, char *argv[]) {
 
@@ -131,7 +132,7 @@ int main(int argc, char *argv[]) {
 //
 //    Cursor<State, int> countCursor(db, getCount, setCount);
 
-    auto countCursor = defCursor(db, count);
+    auto countCursor = DEF_CURSOR(db, count);
     std::cout << "cursor: " << countCursor.get() << std::endl;
     countCursor.subscribe([](int count) {
         std::cout << "cursor sub: " << count << std::endl;
@@ -139,7 +140,7 @@ int main(int argc, char *argv[]) {
 
     countCursor.set(6);
 
-    auto nameCursor = defCursor(db, name);
+    auto nameCursor = DEF_CURSOR(db, name);
     nameCursor.subscribe([](auto &name) {
         std::cout << "new name: " << name << std::endl;
     });
