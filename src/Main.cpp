@@ -34,9 +34,10 @@ private:
 
 template<class T_State, class T_Value>
 class Cursor {
+public:
     using Access = std::function<T_Value &(T_State &)>;
     using Subscription = std::function<void(const T_Value &value)>;
-public:
+
     Cursor(Atom<T_State> &atom, Access access)
             : mAtom(atom), mAccess(access) {
 
@@ -105,18 +106,17 @@ struct get_template_type<C<T>> {
     using type = T;
 };
 
-//#define STATE_TYPE(ATOM) get_template_type<typeof ATOM>::type
-//#define DEF_CURSOR(ATOM, PROP) \
-//    Cursor<STATE_TYPE(ATOM), decltype(std::declval<STATE_TYPE(ATOM)>().PROP)>(ATOM, \
-//        [](const auto state) { return state.PROP; }, \
-//        [](const auto& value, auto &state) { state.PROP = value; })
+#define STATE_TYPE(ATOM) get_template_type<typeof ATOM>::type
+#define DEF_CURSOR(ATOM, PROP) \
+    Cursor<STATE_TYPE(ATOM), decltype(std::declval<STATE_TYPE(ATOM)>().PROP)>(ATOM, \
+        [](const auto state) { return state.PROP; }, \
+        [](const auto& value, auto &state) { state.PROP = value; })
 
-//template<typename T_State, typename T_Value>
-//Cursor<T_State, T_Value> defCursor(Atom<T_State> db, std::function<T_Value *(const T_State &)> accessor) {
-//    return Cursor<T_State, T_Value>(db,
-//                                    [accessor](const auto state) { return *accessor(state); },
-//                                    [accessor](const T_Value &value, T_State &state) { *accessor(state) = value; });
-//}
+template<typename T_State, typename T_Value>
+Cursor<T_State, T_Value> defCursor(Atom<T_State> db, std::function<T_Value &(T_State &)> accessor) {
+    return Cursor<T_State, T_Value>(db, accessor);
+}
+
 
 int main(int argc, char *argv[]) {
 
@@ -146,6 +146,7 @@ int main(int argc, char *argv[]) {
     std::cout << "first: " << std::endl;
     printState(first);
 
+
 //    const auto getCount = [](State state) { return state.count; };
 //    const auto setCount = [](int value, State &state) { state.count = value; };
 //
@@ -165,12 +166,16 @@ int main(int argc, char *argv[]) {
 //    });
 //    nameCursor.set("jim");
 //
-//    auto thing = defCursor<State, int>(db, [](auto state) { return &(state.count); });
+    std::function<int &(State &)> countAccess = [](State &state) -> int & { return state.count; };
+    auto thing = defCursor(db, countAccess);
+    thing.subscribe([](auto count) {
+        std::cout << "super new count: " << count << std::endl;
+    });
+    thing.set(666);
 
-//    thing.subscribe([](auto count) {
-//        std::cout << "super new count: " << count << std::endl;
-//    });
+    auto thing2 = defCursor<State, int>(db, [](auto &state) -> auto & { return state.count; });
 
-//    thing.set(666);
+    Cursor<State, int> cursor2(db, [](auto &state) -> auto & { return state.count; });
+
 
 }
