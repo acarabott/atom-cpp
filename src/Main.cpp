@@ -89,6 +89,26 @@ private:
     Access mAccess = nullptr;
 };
 
+template<typename C>
+struct get_template_type;
+
+template<template<typename> class C, typename T>
+struct get_template_type<C<T>> {
+    using type = T;
+};
+
+#define STATE_TYPE(ATOM) get_template_type<typeof ATOM>::type
+#define PROP_TYPE(ATOM, PROP) decltype(std::declval<STATE_TYPE(ATOM)>().PROP)
+#define DEF_CURSOR(ATOM, PROP) \
+    Cursor<STATE_TYPE(ATOM), PROP_TYPE(ATOM, PROP)>(ATOM, \
+        [](STATE_TYPE(ATOM) &state) -> PROP_TYPE(ATOM, PROP) & { return state.PROP; });
+
+// for some reason, using this creates SIGABRT issues when calling .set with a cursor made with it
+template<typename T_State, typename T_Value>
+Cursor<T_State, T_Value> defCursor(Atom<T_State> db, std::function<T_Value &(T_State &)> accessor) {
+    return Cursor<T_State, T_Value>(db, accessor);
+}
+
 struct SubState {
     float value = 0.5f;
 };
@@ -119,27 +139,6 @@ void printState(const State &state) {
               << "    sub: { value: " << state.sub.value << " }," << std::endl
               << "}" << std::endl;
 }
-
-template<typename C>
-struct get_template_type;
-
-template<template<typename> class C, typename T>
-struct get_template_type<C<T>> {
-    using type = T;
-};
-
-#define STATE_TYPE(ATOM) get_template_type<typeof ATOM>::type
-#define PROP_TYPE(ATOM, PROP) decltype(std::declval<STATE_TYPE(ATOM)>().PROP)
-#define DEF_CURSOR(ATOM, PROP) \
-    Cursor<STATE_TYPE(ATOM), PROP_TYPE(ATOM, PROP)>(ATOM, \
-        [](STATE_TYPE(ATOM) &state) -> PROP_TYPE(ATOM, PROP) & { return state.PROP; });
-
-// for some reason, using this creates SIGABRT issues when calling .set with a cursor made with it
-template<typename T_State, typename T_Value>
-Cursor<T_State, T_Value> defCursor(Atom<T_State> db, std::function<T_Value &(T_State &)> accessor) {
-    return Cursor<T_State, T_Value>(db, accessor);
-}
-
 
 int main(int argc, char *argv[]) {
     // create atom
