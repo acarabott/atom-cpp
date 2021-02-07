@@ -1,43 +1,7 @@
 #include <iostream>
 #include <vector>
 
-template<typename T>
-using Subscription = std::function<void(const T &previousValue, const T &value)>;
-
-template<typename T>
-using Update = std::function<void(T &value)>;
-
-template<typename T>
-class Atomic {
-public:
-    Atomic() {};
-
-    ~Atomic() {};
-
-    virtual const T &get() const = 0;
-
-    virtual void set(const T &value_) = 0;
-
-    void update(const Update<T> &update) {
-        assert(update != nullptr);
-        auto value = get();
-        update(value);
-        set(value);
-    }
-
-    void subscribe(const Subscription<T> &update) {
-        subscriptions.push_back(update);
-    }
-
-    void notifySubscriptions(const T &previousValue, const T &value) {
-        for (const auto &sub : subscriptions) {
-            sub(previousValue, value);
-        }
-    }
-
-protected:
-    std::vector<const Subscription<T>> subscriptions;
-};
+#include "Atomic.h"
 
 template<class T>
 class Atom : public Atomic<T> {
