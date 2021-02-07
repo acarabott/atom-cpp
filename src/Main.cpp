@@ -32,11 +32,19 @@ private:
     std::vector<const Subscription> subs;
 };
 
+template<typename C>
+struct get_template_type;
+
+template<template<typename> class C, typename T>
+struct get_template_type<C<T>> {
+    using type = T;
+};
+
 template<class T_State, class T_Value>
 class Cursor {
-    using Get = std::function<T_Value(T_State)>;
-    using Set = std::function<void(T_Value, T_State &)>;
-    using Subscription = std::function<void(T_Value &value)>;
+    using Get = std::function<T_Value(const T_State &)>;
+    using Set = std::function<void(const T_Value &, T_State &)>;
+    using Subscription = std::function<void(const T_Value &value)>;
 public:
     Cursor(Atom<T_State> &atom, Get get, Set set)
             : mAtom(atom), mGet(get), mSet(set) {}
@@ -70,6 +78,7 @@ private:
 
 struct State {
     int count = 0;
+    std::string name = "";
 };
 
 void increment(Atom<State> &db) {
@@ -94,6 +103,12 @@ void printState(const State &state) {
     std::cout << "State: { count: " << state.count << " }" << std::endl;
 }
 
+
+#define defCursor(ATOM, PROP) \
+    Cursor<get_template_type<typeof ATOM>::type, decltype(std::declval<get_template_type<typeof ATOM>::type>().PROP)>(ATOM, \
+        [](const auto state) { return state.PROP; }, \
+        [](const auto& value, auto &state) { state.PROP = value; })
+
 int main(int argc, char *argv[]) {
 
     Atom<State> db;
@@ -111,16 +126,22 @@ int main(int argc, char *argv[]) {
 
     std::cout << "final count: " << getCount(db) << std::endl << std::endl;
 
-    const auto getCount = [](State state) { return state.count; };
-    const auto setCount = [](int value, State &state) { state.count = value; };
+//    const auto getCount = [](State state) { return state.count; };
+//    const auto setCount = [](int value, State &state) { state.count = value; };
+//
+//    Cursor<State, int> countCursor(db, getCount, setCount);
 
-    Cursor<State, int> countCursor(db, getCount, setCount);
-
+    auto countCursor = defCursor(db, count);
     std::cout << "cursor: " << countCursor.get() << std::endl;
-
     countCursor.subscribe([](int count) {
         std::cout << "cursor sub: " << count << std::endl;
     });
 
     countCursor.set(6);
+
+    auto nameCursor = defCursor(db, name);
+    nameCursor.subscribe([](auto &name) {
+        std::cout << "new name: " << name << std::endl;
+    });
+    nameCursor.set("jim");
 }
