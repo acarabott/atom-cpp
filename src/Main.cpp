@@ -1,19 +1,21 @@
 #include <iostream>
 #include <vector>
 
+template <typename T>
+using Subscription = std::function<void(const T &value, const T &previousValue)>;
+
 template<class T>
 class Atom {
 public:
-    using Subscription = std::function<void(const T &value, const T &oldValue)>;
 
-    const T get() const { return value; }
+    const T& get() const { return value; }
 
     void set(const T value_) {
-        oldValue = value;
+        previousValue = value;
         value = value_;
 
         for (const auto &sub : subs) {
-            sub(value, oldValue);
+            sub(value, previousValue);
         }
     }
 
@@ -23,22 +25,21 @@ public:
         }
     }
 
-    void subscribe(const Subscription &update) {
+    void subscribe(const Subscription<T> &update) {
         subs.push_back(update);
     }
 
 private:
     T value;
-    T oldValue;
+    T previousValue;
 
-    std::vector<const Subscription> subs;
+    std::vector<const Subscription<T>> subs;
 };
 
 template<class T_State, class T_Value>
 class Cursor {
 public:
     using Access = std::function<T_Value &(T_State &)>;
-    using Subscription = std::function<void(const T_Value &value)>;
 
     Cursor(Atom<T_State> &atom, Access access)
             : mAtom(atom), mAccess(access) {
@@ -53,15 +54,16 @@ public:
 
     void set(T_Value value) {
         auto state = mAtom.get();
+        auto previous = mAccess(state);
         mAccess(state) = value;
         mAtom.set(state);
 
         for (const auto &sub : subs) {
-            sub(value);
+            sub(value, previous);
         }
     }
 
-    void subscribe(const Subscription &subscriber) {
+    void subscribe(const Subscription<T_Value> &subscriber) {
         subs.push_back(subscriber);
     }
 
@@ -70,7 +72,7 @@ public:
 private:
     Atom<T_State> &mAtom;
     Access mAccess = nullptr;
-    std::vector<const Subscription> subs;
+    std::vector<const Subscription<T_Value>> subs;
 };
 
 struct SubState {
@@ -136,10 +138,10 @@ int main(int argc, char *argv[]) {
 
     auto first = db.get();
 
-    db.subscribe([](const State& newState, const State& oldState) {
+    db.subscribe([](const State& newState, const State& previousState) {
         std::cout << "Subscription!" << std::endl;
-        std::cout << "old: " << std::endl;
-        printState(oldState);
+        std::cout << "previous: " << std::endl;
+        printState(previousState);
         std::cout << std::endl;
 
         std::cout << "new: " << std::endl;
@@ -177,13 +179,13 @@ int main(int argc, char *argv[]) {
 //    countCursor.set(6);
 
     auto nameCursor = DEF_CURSOR(db, name);
-    nameCursor.subscribe([](const std::string &name) {
+    nameCursor.subscribe([](const std::string &name, const std::string &previousName) {
         std::cout << "new name: " << name << std::endl;
     });
     nameCursor.set("jim");
 //
     auto thing = defCursor<State, int>(db, [](State &state) -> int & { return state.count; });
-    thing.subscribe([](auto count) {
+    thing.subscribe([](auto count, auto previousCount) {
         std::cout << "super new count: " << count << std::endl;
     });
     thing.set(666);
@@ -201,7 +203,7 @@ int main(int argc, char *argv[]) {
     Cursor<State, float> valueCursor(db, [](State &state) -> auto & { return state.sub.value; });
 
     std::cout << "sub value: " << valueCursor.get() << std::endl;
-    valueCursor.subscribe([](auto value) {
+    valueCursor.subscribe([](auto value, auto previous) {
         std::cout << "sub value changed: " << value << std::endl;
     });
 
