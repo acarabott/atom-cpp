@@ -5,7 +5,7 @@ template<typename T>
 using Subscription = std::function<void(const T &previousValue, const T &value)>;
 
 template<typename T>
-using Update = std::function<const T &(const T &value)>;
+using Update = std::function<void(T &value)>;
 
 template<typename T>
 class Atomic {
@@ -20,7 +20,9 @@ public:
 
     void update(const Update<T> &update) {
         assert(update != nullptr);
-        set(update(get()));
+        auto value = get();
+        update(value);
+        set(value);
     }
 
     void subscribe(const Subscription<T> &update) {
@@ -99,17 +101,11 @@ struct State {
 };
 
 void increment(Atom<State> &db) {
-    db.update([](State state) {
-        state.count++;
-        return state;
-    });
+    db.update([](auto &state) { state.count++; });
 }
 
 void decrement(Atom<State> &db) {
-    db.update([](State state) {
-        state.count--;
-        return state;
-    });
+    db.update([](auto &state) { state.count--; });
 }
 
 int getCount(Atom<State> &db) {
