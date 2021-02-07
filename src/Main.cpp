@@ -14,7 +14,7 @@ public:
         previousValue = value;
         value = value_;
 
-        for (const auto &sub : subs) {
+        for (const auto &sub : subscriptions) {
             sub(value, previousValue);
         }
     }
@@ -26,14 +26,14 @@ public:
     }
 
     void subscribe(const Subscription<T> &update) {
-        subs.push_back(update);
+        subscriptions.push_back(update);
     }
 
 private:
     T value;
     T previousValue;
 
-    std::vector<const Subscription<T>> subs;
+    std::vector<const Subscription<T>> subscriptions;
 };
 
 template<class T_State, class T_Value>
@@ -58,13 +58,13 @@ public:
         mAccess(state) = value;
         mAtom.set(state);
 
-        for (const auto &sub : subs) {
+        for (const auto &sub : subscriptions) {
             sub(value, previous);
         }
     }
 
     void subscribe(const Subscription<T_Value> &subscriber) {
-        subs.push_back(subscriber);
+        subscriptions.push_back(subscriber);
     }
 
     ~Cursor() {};
@@ -72,7 +72,7 @@ public:
 private:
     Atom<T_State> &mAtom;
     Access mAccess = nullptr;
-    std::vector<const Subscription<T_Value>> subs;
+    std::vector<const Subscription<T_Value>> subscriptions;
 };
 
 struct SubState {
