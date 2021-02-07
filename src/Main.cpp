@@ -16,11 +16,15 @@ struct State {
 };
 
 void increment(Atom<State> &db) {
-    db.update([](auto &state) { state.count++; });
+    db.update([](auto &state) {
+        state.count++;
+    });
 }
 
 void decrement(Atom<State> &db) {
-    db.update([](auto &state) { state.count--; });
+    db.update([](auto &state) {
+        state.count--;
+    });
 }
 
 int getCount(Atom<State> &db) {
