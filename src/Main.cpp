@@ -71,9 +71,15 @@ private:
     std::vector<const Subscription> subs;
 };
 
+struct SubState {
+    float value = 0.5f;
+};
+
 struct State {
     int count = 0;
     std::string name = "";
+
+    SubState sub;
 };
 
 void increment(Atom<State> &db) {
@@ -95,7 +101,11 @@ int getCount(Atom<State> &db) {
 }
 
 void printState(const State &state) {
-    std::cout << "State: { count: " << state.count << " }" << std::endl;
+    std::cout << "State: { " << std::endl
+              << "    count: " << state.count << "," << std::endl
+              << "    name: " << state.name << "," << std::endl
+              << "    sub: { value: " << state.sub.value << " }," << std::endl
+              << "}" << std::endl;
 }
 
 template<typename C>
@@ -177,4 +187,20 @@ int main(int argc, char *argv[]) {
     Cursor<State, int> cursor2(db, [](auto &state) -> auto & { return state.count; });
 
 
+    db.update([](auto state) {
+        state.sub.value = 6.66f;
+        return state;
+    });
+
+    Cursor<State, float> valueCursor(db, [](State &state) -> auto & { return state.sub.value; });
+
+    std::cout << "sub value: " << valueCursor.get() << std::endl;
+    valueCursor.subscribe([](auto value){
+        std::cout << "sub value changed: " << value << std::endl;
+    });
+
+    valueCursor.set(3.33f);
+
+    auto vc = DEF_CURSOR(db, sub.value);
+    std::cout << "vc: " << vc.get() << std::endl;
 }
