@@ -13,7 +13,7 @@ public:
 
     virtual const T &get() const = 0;
 
-    virtual void set(const T &value_) = 0;
+    virtual void set(const T &value) = 0;
 
     void update(const Update &update) {
         assert(update != nullptr);

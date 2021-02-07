@@ -3,6 +3,7 @@
 
 #include "Atom.h"
 #include "Cursor.h"
+#include "History.h"
 
 struct SubState {
     float value = 0.5f;
@@ -32,16 +33,18 @@ int getCount(Atom<State> &db) {
 }
 
 void printState(const State &state) {
-    std::cout << "State: { " << std::endl
-              << "    count: " << state.count << "," << std::endl
-              << "    name: " << state.name << "," << std::endl
-              << "    sub: { value: " << state.sub.value << " }," << std::endl
-              << "}" << std::endl;
+    std::cout << "{ count: << " << state.count << ", "
+              << "name: " << state.name << ", "
+              << "sub: { value: " << state.sub.value << " } }" << std::endl;
 }
 
 int main(int argc, char *argv[]) {
+    (void) argc;
+    (void) argv;
+
     // create atom
     Atom<State> db;
+    History history(db);
 
     // copy current state
     auto first = db.get();
@@ -49,12 +52,13 @@ int main(int argc, char *argv[]) {
     // add subscription
     db.subscribe([](const State &previousState, const State &state) {
         std::cout << "Subscription!" << std::endl;
-        std::cout << "previous: " << std::endl;
-        printState(previousState);
-        std::cout << std::endl;
 
-        std::cout << "new: " << std::endl;
+        std::cout << "old: ";
+        printState(previousState);
+
+        std::cout << "new: ";
         printState(state);
+
         std::cout << std::endl;
     });
 
@@ -70,19 +74,19 @@ int main(int argc, char *argv[]) {
     // update value via cursor
     cursor.set(666);
 
-    // print original state
-    std::cout << "first: " << std::endl;
+    // print original and current state
+    std::cout << "first: ";
     printState(first);
-
-    // print new state
-    std::cout << "final count: " << getCount(db) << std::endl << std::endl;
-
-
+    std::cout << "now  : ";
+    printState(db.get());
+    std::cout << std::endl;
 
 
     // create name cursor with macro
     auto nameCursor = DEF_CURSOR(db, name);
-    nameCursor.subscribe([](const std::string &previousName, const std::string &name) {
+    nameCursor.subscribe([](const std::string &previous, const std::string &name) {
+        (void) previous;
+
         std::cout << "new name: " << name << std::endl;
     });
     nameCursor.set("jim");
@@ -101,7 +105,8 @@ int main(int argc, char *argv[]) {
     std::cout << "sub value: " << valueCursor.get() << std::endl;
 
     // subscribe to sub cursor
-    valueCursor.subscribe([](auto previous, auto value) {
+    valueCursor.subscribe([](auto &previous, auto &value) {
+        (void) previous;
         std::cout << "sub value changed: " << value << std::endl;
     });
 
@@ -111,4 +116,19 @@ int main(int argc, char *argv[]) {
     // create cursor with macro
     auto vc = DEF_CURSOR(db, sub.value);
     std::cout << "vc: " << vc.get() << std::endl;
+
+
+    // history
+
+    std::cout << std::endl << "history size: " << history.size() << std::endl;
+
+    for (int i = 0; i < history.size(); ++i) {
+        const auto istr = std::to_string(i);
+        std::cout << std::string(2 - istr.length(), ' ').append(istr) << ": ";
+        printState(history.get(i));
+    }
+
+    std::cout << std::endl << "restore from history" << std::endl;
+    history.set(0);
+
 }
