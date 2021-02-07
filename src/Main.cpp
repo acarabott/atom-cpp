@@ -17,7 +17,7 @@ public:
         }
     }
 
-    void update(std::function<T(const T value)> update) {
+    void update(std::function<T(const T& value)> update) {
         if (update != nullptr) {
             set(update(get()));
         }
