@@ -11,6 +11,9 @@ public:
     virtual const T &get() const = 0;
 
     virtual void set(const T &value_) = 0;
+
+    virtual void update(std::function<T(const T &value)> update) = 0;
+
 };
 
 template<class T>
@@ -28,7 +31,7 @@ public:
         }
     }
 
-    void update(std::function<T(const T &value)> update) {
+    void update(std::function<T(const T &value)> update) override {
         if (update != nullptr) {
             set(update(get()));
         }
