@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <sstream>
 
 #include "Atom.h"
 #include "Cursor.h"
@@ -12,6 +13,7 @@ struct SubState {
 struct State {
     int count = 0;
     std::string name = "";
+    std::vector<int> ids;
 
     SubState sub;
 };
@@ -33,8 +35,19 @@ int getCount(Atom<State> &db) {
 }
 
 void printState(const State &state) {
+    std::stringstream ss;
+    ss << "[";
+    for (int i = 0; i < state.ids.size(); ++i) {
+        ss << state.ids[i];
+        if (i < state.ids.size() - 1) {
+            ss << ", ";
+        }
+    }
+    ss << "]";
+
     std::cout << "{ count: << " << state.count << ", "
               << "name: " << state.name << ", "
+              << "ids: " << ss.str() << ", "
               << "sub: { value: " << state.sub.value << " } }" << std::endl;
 }
 
@@ -125,4 +138,13 @@ int main(int argc, char *argv[]) {
     std::cout << std::endl << "restore from history" << std::endl;
     history.set(0);
 
+
+    db.update([](State &state) {
+        state.ids.push_back(666);
+    });
+
+
+    db.update([](auto &state) {
+        state.ids[0] = 999;
+    });
 }
